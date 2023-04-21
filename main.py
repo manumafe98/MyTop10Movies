@@ -5,17 +5,18 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 import requests
+import os
 
-API_KEY = "38d089808acd67f9a32d59629a4578a8"
+API_KEY = os.environ.get("API_KEY")
 TBD_SEARCH_API = "https://api.themoviedb.org/3/search/movie"
 TBD_GET_API = "https://api.themoviedb.org/3/movie/"
 IMAGE_PATH = "https://image.tmdb.org/t/p/w500"
 list_of_dicts = []
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "8BYkEfBA6O6donzWlSihBXox7C0sKR6b"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 Bootstrap(app)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///movies.db"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL",  "sqlite:///blog.db")
 db = SQLAlchemy(app)
 
 
