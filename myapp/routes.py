@@ -1,9 +1,7 @@
-from flask import Flask, render_template, redirect, url_for, request
-from flask_bootstrap import Bootstrap
-from flask_sqlalchemy import SQLAlchemy
-from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
+from flask import Blueprint, render_template, redirect, url_for, request
+from forms import EditForm, AddForm
+from models import Movies
+from extension import db
 import requests
 import os
 
@@ -13,40 +11,10 @@ TBD_GET_API = "https://api.themoviedb.org/3/movie/"
 IMAGE_PATH = "https://image.tmdb.org/t/p/w500"
 list_of_dicts = []
 
-app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
-Bootstrap(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL",  "sqlite:///blog.db")
-db = SQLAlchemy(app)
+main = Blueprint("main", __name__)
 
 
-class EditForm(FlaskForm):
-    rating = StringField(label="Your Rating", validators=[DataRequired()])
-    review = StringField(label="Your Review", validators=[DataRequired()])
-    submit = SubmitField(label="Done")
-
-
-class AddForm(FlaskForm):
-    movie_title = StringField(label="Movie Title", validators=[DataRequired()])
-    submit = SubmitField(label="Add Movie")
-
-
-class Movies(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(250), unique=True, nullable=False)
-    year = db.Column(db.Integer, nullable=False)
-    description = db.Column(db.String(300), unique=True, nullable=False)
-    rating = db.Column(db.Float, nullable=False)
-    ranking = db.Column(db.Integer, nullable=False)
-    review = db.Column(db.String(250), unique=True, nullable=False)
-    img_url = db.Column(db.String(250), unique=True, nullable=False)
-
-
-with app.app_context():
-    db.create_all()
-
-
-@app.route("/")
+@main.route("/")
 def home():
     all_movies = db.session.query(Movies).order_by(Movies.rating.desc()).all()
     for movie in all_movies:
@@ -58,7 +26,7 @@ def home():
     return render_template("index.html", movies=all_movies)
 
 
-@app.route("/edit", methods=["GET", "POST"])
+@main.route("/edit", methods=["GET", "POST"])
 def edit():
     form = EditForm()
     if form.validate_on_submit():
@@ -71,7 +39,7 @@ def edit():
     return render_template("edit.html", form=form)
 
 
-@app.route("/delete")
+@main.route("/delete")
 def delete():
     movie_id = request.args.get("id")
     movie_to_delete = db.session.get(Movies, movie_id)
@@ -80,7 +48,7 @@ def delete():
     return redirect(url_for("home"))
 
 
-@app.route("/add", methods=["Get", "POST"])
+@main.route("/add", methods=["Get", "POST"])
 def add():
     form = AddForm()
     if form.validate_on_submit():
@@ -93,7 +61,7 @@ def add():
     return render_template("add.html", form=form)
 
 
-@app.route("/get_movie_data")
+@main.route("/get_movie_data")
 def get_movie_data():
     movie_id = int(request.args.get("id"))
     movie_api_url = f"{TBD_GET_API}/{movie_id}"
@@ -111,7 +79,3 @@ def get_movie_data():
     get_movie = Movies.query.filter_by(title=output["original_title"]).first()
     get_id = get_movie.id
     return redirect(url_for("edit", id=get_id))
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
