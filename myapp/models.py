@@ -1,4 +1,4 @@
-from extension import db
+from myapp.extension import db
 
 
 class Movies(db.Model):

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request
-from forms import EditForm, AddForm
-from models import Movies
-from extension import db
+from myapp.forms import EditForm, AddForm
+from myapp.models import Movies
+from myapp.extension import db
 import requests
 import os
 
@@ -35,7 +35,7 @@ def edit():
         movie_to_update.rating = form.rating.data
         movie_to_update.review = form.review.data
         db.session.commit()
-        return redirect(url_for("home"))
+        return redirect(url_for("main.home"))
     return render_template("edit.html", form=form)
 
 
@@ -45,7 +45,7 @@ def delete():
     movie_to_delete = db.session.get(Movies, movie_id)
     db.session.delete(movie_to_delete)
     db.session.commit()
-    return redirect(url_for("home"))
+    return redirect(url_for("main.home"))
 
 
 @main.route("/add", methods=["Get", "POST"])
@@ -78,4 +78,4 @@ def get_movie_data():
     db.session.commit()
     get_movie = Movies.query.filter_by(title=output["original_title"]).first()
     get_id = get_movie.id
-    return redirect(url_for("edit", id=get_id))
+    return redirect(url_for("main.edit", id=get_id))
