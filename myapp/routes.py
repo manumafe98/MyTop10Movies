@@ -72,7 +72,7 @@ def get_movie_data():
                         year=output["release_date"].split("-")[0],
                         img_url=f"{IMAGE_PATH}{output['poster_path']}",
                         rating=1.0,
-                        ranking="None",
+                        ranking=1,
                         review="")
     db.session.add(new_record)
     db.session.commit()
