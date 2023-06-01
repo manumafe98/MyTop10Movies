@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, request
-from myapp.forms import EditForm, AddForm
-from myapp.models import Movies
-from myapp.extension import db
+from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask_login import LoginManager, login_user, logout_user, current_user
+from myapp.forms import EditForm, AddForm, RegisterForm, LoginForm
+from myapp.models import Movies, Users
+from myapp.models import db
+from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import os
 
@@ -12,6 +14,65 @@ IMAGE_PATH = "https://image.tmdb.org/t/p/w500"
 list_of_dicts = []
 
 main = Blueprint("main", __name__)
+login_manager = LoginManager()
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Users.query.get(int(user_id))
+
+
+@main.route("/register", methods=["GET", "POST"])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():
+
+        if Users.query.filter_by(email=form.email.data).first():
+            flash("You've already signed up with that email, log in instead!")
+            return redirect(url_for("login"))
+
+        hash_and_salted_password = generate_password_hash(
+            form.password.data,
+            method="pbkdf2:sha256",
+            salt_length=8
+        )
+        new_user = Users(
+            email=form.email.data,
+            name=form.username.data,
+            password=hash_and_salted_password,
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        login_user(new_user)
+        return redirect(url_for("home"))
+
+    return render_template("register.html", form=form, current_user=current_user)
+
+
+@main.route("/login", methods=["GET", "POST"])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = form.email.data
+        password = form.password.data
+        user = Users.query.filter_by(email=email).first()
+
+        if not user:
+            flash("That email does not exist, please try again.")
+            return redirect(url_for("login"))
+        elif not check_password_hash(user.password, password):
+            flash("Password incorrect, please try again.")
+            return redirect(url_for("login"))
+        else:
+            login_user(user)
+            return redirect(url_for("home"))
+    return render_template("login.html", form=form, current_user=current_user)
+
+
+@main.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
 
 
 @main.route("/")
@@ -79,3 +140,8 @@ def get_movie_data():
     get_movie = Movies.query.filter_by(title=output["original_title"]).first()
     get_id = get_movie.id
     return redirect(url_for("main.edit", id=get_id))
+
+# TODO add a navbar to all the page and a footer
+# TODO create the login.html and register.html
+# TODO implement flash
+# TODO make the navbar "login" button to be logout when you are loged
